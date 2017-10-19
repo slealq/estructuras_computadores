@@ -4,14 +4,49 @@
 main:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
+	# Prueba 1: Imprimir las matrix y el resultado final de mult
 	la $a0, Matrix1 # Cargar posicion de la matriz 1
 	jal imprimir_matriz
 	la $a0, Matrix2 # Cargar la posicion de la segunda matrix
 	jal imprimir_matriz 
+
+	# IMPRIMIR FRASE RESULTADO
+	la $a0, frase2
+	li $v0, 4 # string
+	syscall
+
+	# CALCULAR EL RESULTADO
+	la $a0, Matrix1
+	la $a1, Matrix2
+	jal mult_matrix
+	add $a0, $0, $v0
+	jal imprimir_matriz
+
+	# Prueba 2: Imprimir las matrix y el resultado final de mult
+	la $a0, Matrix3 # Cargar posicion de la matriz 3
+	jal imprimir_matriz
+	la $a0, Matrix4 # Cargar la posicion de la segunda matrix
+	jal imprimir_matriz 
+	
+	
+	# IMPRIMIR FRASE RESULTADO
+	la $a0, frase2
+	li $v0, 4 # string
+	syscall
+
+	# CALCULAR EL RESULTADO
+	la $a0, Matrix3
+	la $a1, Matrix4
+	jal mult_matrix
+	add $a0, $0, $v0
+	jal imprimir_matriz
+
+	# Devolver ra de la pila y devolver pila
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
-mult_matrixz:
+
+mult_matrix:
 	# recibo a0 matrix1
 	# a1 matrix 2
 	# en v0 se va el resultado
@@ -43,6 +78,86 @@ mult_matrixz:
 	add $a0, $0, $t4
 	li $v0, 9
 	syscall
+	
+	# Devolver a0
+	lw $a0, 0($sp)
+	addi $sp, $sp, 4
+
+	# Paso 3: Guardar los valores resultantes de fila y columna
+	sw $t0, 0($v0)
+	sw $t3, 4($v0)
+
+	# Paso 4: iniciar la mult
+	li $t4, 0 # i
+	li $t5, 0 # j
+	li $t6, 0 # contador
+	li $t7, 1 # desfase
+	add $s0, $0, $t1
+	add $s1, $0, $t3
+	#addi $s0, $s0, -1 #contador maximo
+loop_mult_1:
+	# Iteracion para sumar i++
+	# Encontrar (i+jxcolumnas+desfase)x8
+	mult $t5, $t3
+	mflo $t8 # cargar jxcolumnas
+	add $t8, $t8, $t4
+	add $t8, $t8, $t7 # i+jxcolumnas+desfase
+	sll $t8, $t8, 3 # multiplicar por 8
+	add $t8, $v0, $t8 # (j+jxcolumnas+desfase)x8 + v0
+	#sdc1 $0, 0($t8) # Cargar cero para limpiar
+	#add.d $
+loop_mult_2:
+	# Iteracion para hacer la mult
+	# En este punto $t1 y $t2 ya no se necesitan
+	# Vamos a usarlos
+	# Cargar en $t1 el dato correspondiente del loop
+	# De la primera matriz
+	# Y en $t2 el dato correspondiente del loop
+	# De la segunda matriz
+	# Multiplicar y guardar en $t8 + =
+	# salirse si cont = colmnas m_1
+
+	# numero de la matrix1
+	mult $t5, $s0
+	mflo $t1 # cargar jxcolumnas
+	add $t1, $t1, $t6 #(cont+jxcolumnas)
+	add $t1, $t1, $t7 #(cont+jxcolumnas+desfase)
+	sll $t1, $t1, 3 # multiplicar por 8
+	add $t1, $t1, $a0 # sumar v0
+	ldc1 $f0, 0($t1) # Cargar el primer numero
+	
+	# numero de la matrix2
+	mult $t6, $s1
+	mflo $t2 # # cargar cont*columnas
+	add $t2, $t2, $t4
+	add $t2, $t2, $t7 # (j+contxcolumnas+desfase)
+	sll $t2, $t2, 3 # multiplicar por 8
+	add $t2, $t2, $a1 # agregar v0
+	ldc1 $f2, 0($t2)
+
+	# multiplicar
+	mul.d $f4, $f0, $f2
+
+	# Cargar el valor de la posicion
+	ldc1 $f6, 0($t8)
+	add.d $f6, $f4, $f6 # agregar el valor de esta iteracion
+	sdc1 $f6, 0($t8)
+	
+	addi $t6, $t6, 1 # sumarle 1 al contador
+	
+	beq $t6, $s0, fin_loop_mult_2
+	j loop_mult_2
+fin_loop_mult_2:
+	li $t6, 0 # Devovler contador a cero
+	addi $t4, $t4, 1 # agregar 1 a i
+	beq $t4, $t3, fin_loop_mult_1
+	j loop_mult_1
+	
+fin_loop_mult_1:
+	li $t4, 0 # i = 0
+	addi $t5, $t5, 1 # agregar 1 a j
+	beq $t5, $t0, fin_mult
+	j loop_mult_1
 	
 fin_mult:
 	jr $ra
@@ -100,11 +215,21 @@ Matrix1:
 	.word 2, 3
 	.double 1.0, 2.0, 3.0, 4.0, 5.0, 6.0
 
-	.data 0x10001000
+	.data 0x10000100
 Matrix2:
 	.word 3,2
 	.double 6.0, 5.0, 4.0, 3.0, 2.0, 1.0
 
+	.data 0x10001000
+Matrix3:
+	.word 3,3
+	.double 3.0, 2.0, 1.0, 1.0, 1.0, 3.0, 0.0, 2.0, 1.0
+
+	.data 0x10010000
+Matrix4:
+	.word 3,1
+	.double 2.0, 1.0, 3.0
+	
 	.data
 tab:
 	.asciiz "\t"
