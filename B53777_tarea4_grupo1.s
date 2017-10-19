@@ -4,7 +4,16 @@
 main:
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
+
+
 	# Prueba 1: Imprimir las matrix y el resultado final de mult
+
+	# Imprimir nueva prueba
+	la $a0, prueba
+	li $v0, 4
+	syscall
+
+	# Cargar matrices para impresion
 	la $a0, Matrix1 # Cargar posicion de la matriz 1
 	jal imprimir_matriz
 	la $a0, Matrix2 # Cargar la posicion de la segunda matrix
@@ -23,6 +32,13 @@ main:
 	jal imprimir_matriz
 
 	# Prueba 2: Imprimir las matrix y el resultado final de mult
+
+	# Imprimir nueva prueba
+	la $a0, prueba
+	li $v0, 4
+	syscall
+
+	# Cargar matrices para imression
 	la $a0, Matrix3 # Cargar posicion de la matriz 3
 	jal imprimir_matriz
 	la $a0, Matrix4 # Cargar la posicion de la segunda matrix
@@ -41,6 +57,33 @@ main:
 	add $a0, $0, $v0
 	jal imprimir_matriz
 
+	# Prueba de fallo - IMPRIMIR
+
+	# Imprimir nueva prueba
+	la $a0, prueba
+	li $v0, 4
+	syscall
+	
+	# Cargar matrices para impresion
+	la $a0, Matrix2
+	jal imprimir_matriz
+	la $a0, Matrix3
+	jal imprimir_matriz
+
+	# Prueba de fallo - cargar para mult
+	la $a0, Matrix2
+	la $a1, Matrix3
+	jal mult_matrix
+	beq $v0, 0, fin_fallo
+	add $a0, $0, $v0
+	jal imprimir_matriz
+	j fin
+fin_fallo:
+	li $v0, 4
+	la $a0, fallo
+	syscall
+
+fin:	
 	# Devolver ra de la pila y devolver pila
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
@@ -239,3 +282,7 @@ frase1:
 	.asciiz "\nImprimiendo matrix\n"
 frase2:
 	.asciiz "\nResultado\n"
+fallo:
+	.asciiz "\n WARNING! Las matrices no son compatibles \n"
+prueba:
+	.asciiz "\n NUEVA PRUEBA: \n"
